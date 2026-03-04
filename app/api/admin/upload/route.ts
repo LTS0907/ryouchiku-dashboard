@@ -59,6 +59,9 @@ export async function POST(request: Request) {
       let lastYearCostOfSales: number | null = null;
       let lastYearGrossProfit: number | null = null;
       let lastYearMarginProfit: number | null = null;
+      let operatingProfit: number | null = null;
+      let budgetOperatingProfit: number | null = null;
+      let lastYearOperatingProfit: number | null = null;
 
       let costOfSalesDone = false;
       for (const record of records) {
@@ -85,6 +88,10 @@ export async function POST(request: Request) {
           lastYearMarginProfit = parseAmountNullable(record[cols.lastYear]);
         } else if (label === '限界利益率') {
           marginProfitRate = parseAmountNullable(record[cols.actual]);
+        } else if (label === '営業利益') {
+          operatingProfit = parseAmountNullable(record[cols.actual]);
+          budgetOperatingProfit = parseAmountNullable(record[cols.budget]);
+          lastYearOperatingProfit = parseAmountNullable(record[cols.lastYear]);
         }
       }
 
@@ -95,6 +102,7 @@ export async function POST(request: Request) {
           update: {
             salesRevenue, salesDiscount, costOfSales, grossProfit, grossProfitRate,
             marginProfit, marginProfitRate,
+            operatingProfit, budgetOperatingProfit, lastYearOperatingProfit,
             budgetSales, budgetGrossProfit, budgetMarginProfit,
             lastYearSalesRevenue, lastYearCostOfSales, lastYearGrossProfit, lastYearMarginProfit,
           },
@@ -102,6 +110,7 @@ export async function POST(request: Request) {
             year, month,
             salesRevenue, salesDiscount, costOfSales, grossProfit, grossProfitRate,
             marginProfit, marginProfitRate,
+            operatingProfit, budgetOperatingProfit, lastYearOperatingProfit,
             budgetSales, budgetGrossProfit, budgetMarginProfit,
             lastYearSalesRevenue, lastYearCostOfSales, lastYearGrossProfit, lastYearMarginProfit,
           },
