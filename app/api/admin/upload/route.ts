@@ -36,8 +36,13 @@ export async function POST(request: Request) {
       };
     }
 
-    // ── 1. MonthlyAccounting（集計データ）の保存 ──
+    // ── 全操作を収集して1トランザクションで実行（接続数節約） ──
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const txOps: any[] = [];
     let importCount = 0;
+    let lineItemCount = 0;
+
+    // 1. MonthlyAccounting ops
     for (let month = 1; month <= 12; month++) {
       const cols = monthColumns[month];
 
@@ -85,7 +90,7 @@ export async function POST(request: Request) {
 
       if (salesRevenue > 0 || budgetSales !== null) {
         const grossProfitRate = salesRevenue > 0 ? grossProfit / salesRevenue : 0;
-        await prisma.monthlyAccounting.upsert({
+        txOps.push(prisma.monthlyAccounting.upsert({
           where: { year_month: { year, month } },
           update: {
             salesRevenue, salesDiscount, costOfSales, grossProfit, grossProfitRate,
@@ -100,14 +105,12 @@ export async function POST(request: Request) {
             budgetSales, budgetGrossProfit, budgetMarginProfit,
             lastYearSalesRevenue, lastYearCostOfSales, lastYearGrossProfit, lastYearMarginProfit,
           },
-        });
+        }));
         importCount++;
       }
     }
 
-    // ── 2. AccountingLineItem（明細行）の保存 ──
-    let lineItemCount = 0;
-
+    // 2. AccountingLineItem ops
     for (let index = 2; index < Math.min(records.length, 103); index++) {
       const row = records[index] as string[];
 
@@ -145,7 +148,7 @@ export async function POST(request: Request) {
         });
       }
 
-      await prisma.accountingLineItem.upsert({
+      txOps.push(prisma.accountingLineItem.upsert({
         where: { year_rowIndex: { year, rowIndex: index } },
         update: {
           category: displayCategory,
@@ -159,9 +162,12 @@ export async function POST(request: Request) {
           subcategory: displaySubcategory,
           monthsJson: JSON.stringify(months),
         },
-      });
+      }));
       lineItemCount++;
     }
+
+    // 全操作を1トランザクションで実行（接続1本のみ使用）
+    await prisma.$transaction(txOps, { timeout: 50000 });
 
     return NextResponse.json({
       success: true,
