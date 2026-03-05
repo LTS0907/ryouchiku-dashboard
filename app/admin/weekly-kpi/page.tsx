@@ -231,21 +231,14 @@ export default function WeeklyKPIInputPage() {
                     </th>
                     {[1, 2, 3, 4, 5].map((week) => {
                       const getWeekRange = (year: number, month: number, weekNum: number): string => {
-                        const firstDay = new Date(year, month - 1, 1);
-                        const firstDayOfWeek = firstDay.getDay();
+                        const firstDayOfWeek = new Date(year, month - 1, 1).getDay(); // 0=日, 6=土
                         const lastDay = new Date(year, month, 0).getDate();
+                        const daysToSaturday = (6 - firstDayOfWeek + 7) % 7;
+                        const week1End = 1 + daysToSaturday;
                         if (weekNum === 1) {
-                          if (firstDayOfWeek === 6) return `1～${Math.min(7, lastDay)}`;
-                          const daysToFriday = (5 - firstDayOfWeek + 7) % 7 + 1;
-                          return `1～${Math.min(daysToFriday, lastDay)}`;
+                          return `1～${Math.min(week1End, lastDay)}`;
                         } else {
-                          let weekStart: number;
-                          if (firstDayOfWeek === 6) {
-                            weekStart = 1 + (weekNum - 1) * 7;
-                          } else {
-                            const daysToFriday = (5 - firstDayOfWeek + 7) % 7 + 1;
-                            weekStart = daysToFriday + 1 + (weekNum - 2) * 7;
-                          }
+                          const weekStart = week1End + 1 + (weekNum - 2) * 7;
                           if (weekStart > lastDay) return '';
                           return `${weekStart}～${Math.min(weekStart + 6, lastDay)}`;
                         }
