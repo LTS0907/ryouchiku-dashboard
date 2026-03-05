@@ -2,44 +2,27 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Upload, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Upload, CheckCircle, XCircle, FileText } from 'lucide-react';
 
-interface UploadSection {
-  label: string;
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
+
+function MFUploadCard({
+  title,
+  description,
+  accept,
+}: {
+  title: string;
   description: string;
-  endpoint: string;
-  filename: string;
-}
-
-const UPLOAD_SECTIONS: UploadSection[] = [
-  {
-    label: '月次予測（管理会計）',
-    description: '【共有用】2026度月次会議用管理会計 - 月次予測.csv',
-    endpoint: '/api/admin/upload',
-    filename: '月次予測',
-  },
-  {
-    label: '週次KPI（積極版）',
-    description: '【共有用】2026度月次会議用管理会計 - 週次KPI（積極版）.csv',
-    endpoint: '/api/admin/upload-weekly-kpi',
-    filename: '週次KPI',
-  },
-  {
-    label: '週次現場KPI（積極版）',
-    description: '【共有用】2026度月次会議用管理会計 - 週次現場KPI（積極版）.csv',
-    endpoint: '/api/admin/upload-site-kpi',
-    filename: '週次現場KPI',
-  },
-];
-
-function UploadCard({ section }: { section: UploadSection }) {
+  accept: string;
+}) {
   const [file, setFile] = useState<File | null>(null);
+  const [year, setYear] = useState(CURRENT_YEAR - 1);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       setFile(e.target.files[0]);
       setResult(null);
     }
@@ -49,91 +32,105 @@ function UploadCard({ section }: { section: UploadSection }) {
     if (!file) return;
     setUploading(true);
     setResult(null);
-
     try {
       const formData = new FormData();
       formData.append('file', file);
-
-      const response = await fetch(section.endpoint, { method: 'POST', body: formData });
-      const data = await response.json();
-
-      if (response.ok) {
-        setResult({ success: true, message: data.message });
-        setFile(null);
-      } else {
-        setResult({ success: false, message: data.error || 'アップロードに失敗しました' });
-      }
+      formData.append('year', String(year));
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      setResult({ success: res.ok, message: data.message || data.error || '不明なエラー' });
+      if (res.ok) setFile(null);
     } catch {
-      setResult({ success: false, message: 'エラーが発生しました' });
+      setResult({ success: false, message: 'ネットワークエラーが発生しました' });
     } finally {
       setUploading(false);
     }
   };
 
-  const inputId = `file-upload-${section.endpoint.replace(/\//g, '-')}`;
+  const inputId = `upload-${title}`;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{section.label}</CardTitle>
-        <p className="text-sm text-gray-500">{section.description}</p>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <Upload className="mx-auto h-8 w-8 text-gray-400 mb-3" />
-            <label
-              htmlFor={inputId}
-              className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              ファイルを選択
-              <input
-                id={inputId}
-                type="file"
-                accept=".csv"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </label>
-            {file && (
-              <div className="mt-3 text-sm text-gray-600">
-                選択: <span className="font-medium">{file.name}</span>
-              </div>
-            )}
-          </div>
-
-          {file && (
-            <button
-              onClick={handleUpload}
-              disabled={uploading}
-              className="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {uploading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  アップロード中...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-5 w-5" />
-                  アップロード
-                </>
-              )}
-            </button>
-          )}
-
-          {result && (
-            <div className={`flex items-center p-4 rounded-lg ${result.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-              {result.success ? <CheckCircle className="h-5 w-5 mr-3 flex-shrink-0" /> : <XCircle className="h-5 w-5 mr-3 flex-shrink-0" />}
-              <span>{result.message}</span>
-            </div>
-          )}
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="flex items-start gap-3 mb-4">
+        <FileText className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+        <div>
+          <h3 className="font-semibold text-gray-900">{title}</h3>
+          <p className="text-sm text-gray-500 mt-0.5">{description}</p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* 年度選択 */}
+      <div className="flex items-center gap-3 mb-4">
+        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">データの年度:</label>
+        <select
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value))}
+          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {YEAR_OPTIONS.map((y) => (
+            <option key={y} value={y}>{y}年</option>
+          ))}
+        </select>
+        <span className="text-xs text-gray-400">※ファイル名の日付ではなくデータが含まれる年を選択</span>
+      </div>
+
+      {/* ファイル選択 */}
+      <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center mb-4">
+        <Upload className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+        <label
+          htmlFor={inputId}
+          className="cursor-pointer inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+        >
+          CSVファイルを選択
+          <input
+            id={inputId}
+            type="file"
+            accept={accept}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </label>
+        {file && (
+          <p className="mt-2 text-sm text-gray-600">
+            選択中: <span className="font-medium">{file.name}</span>
+          </p>
+        )}
+      </div>
+
+      {/* アップロードボタン */}
+      {file && (
+        <button
+          onClick={handleUpload}
+          disabled={uploading}
+          className="w-full flex justify-center items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        >
+          {uploading ? (
+            <>
+              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              インポート中...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4" />
+              {year}年データをインポート
+            </>
+          )}
+        </button>
+      )}
+
+      {/* 結果 */}
+      {result && (
+        <div className={`flex items-start gap-2 mt-4 p-4 rounded-xl text-sm ${result.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          {result.success
+            ? <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            : <XCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />}
+          <span>{result.message}</span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -143,27 +140,38 @@ export default function UploadPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-          <button onClick={() => router.back()} className="flex items-center text-gray-600 hover:text-gray-900 mb-4">
-            <ArrowLeft className="h-5 w-5 mr-2" />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <button onClick={() => router.back()} className="flex items-center text-gray-500 hover:text-gray-900 mb-4">
+            <ArrowLeft className="h-5 w-5 mr-1" />
             戻る
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">CSV アップロード</h1>
-          <p className="mt-1 text-sm text-gray-500">Google SheetsからエクスポートしたCSVをアップロードしてデータを更新します</p>
+          <h1 className="text-2xl font-bold text-gray-900">CSVアップロード</h1>
+          <p className="mt-1 text-sm text-gray-500">マネーフォワードからエクスポートしたCSVをアップロードしてデータを更新します</p>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-6">
-        {UPLOAD_SECTIONS.map((section) => (
-          <UploadCard key={section.endpoint} section={section} />
-        ))}
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">アップロード手順</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Google Sheetsで対象のシートを開く</li>
-            <li>• 「ファイル → ダウンロード → カンマ区切り (.csv)」でエクスポート</li>
-            <li>• 上記の対応するセクションでファイルを選択してアップロード</li>
+        <MFUploadCard
+          title="損益計算書（月次推移）"
+          description="マネーフォワード → レポート → 損益計算書 → 月次推移 でエクスポートしたCSV"
+          accept=".csv"
+        />
+
+        <MFUploadCard
+          title="貸借対照表（月次推移）"
+          description="マネーフォワード → レポート → 貸借対照表 → 月次推移 でエクスポートしたCSV"
+          accept=".csv"
+        />
+
+        {/* 注意事項 */}
+        <div className="bg-blue-50 rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-blue-900 mb-2">ご注意</h3>
+          <ul className="text-sm text-blue-800 space-y-1.5">
+            <li>• ファイル名の日付（例: 20260306）はエクスポート日時です。データが含まれる年度を年度欄で指定してください</li>
+            <li>• 同じ年度を再アップロードすると既存データが上書きされます</li>
+            <li>• 限界利益は「売上総利益 ＋ 労務費 ＋ 労務費賞与」で自動計算されます</li>
+            <li>• 予算・目標値は予算設定ウィザードで別途入力してください</li>
           </ul>
         </div>
       </main>
