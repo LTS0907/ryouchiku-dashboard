@@ -267,6 +267,9 @@ export default function WeeklyKPIInputPage() {
                         const weekData = kpiData[itemName]?.[weekKey];
                         return (
                           <td key={week} className="px-2 py-2 border-r border-gray-200">
+                            {weekData?.target !== undefined && weekData.target !== '' && (
+                              <div className="text-xs text-gray-400 text-center mb-1">目標: {weekData.target}</div>
+                            )}
                             <input
                               type="number"
                               step="0.01"
