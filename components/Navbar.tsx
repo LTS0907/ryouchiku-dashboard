@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, FileText, BarChart3, Upload, RefreshCw, Download, Target, Wand2 } from 'lucide-react';
+import { Home, FileText, BarChart3, Upload, RefreshCw, Download, Target, Wand2, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 
 export function Navbar() {
@@ -15,6 +15,7 @@ export function Navbar() {
     { name: 'ダッシュボード', href: '/', icon: Home },
     { name: '月次会計一覧', href: '/accounting', icon: FileText },
     { name: '年次サマリー', href: '/reports/annual', icon: BarChart3 },
+    { name: '貸借対照表', href: '/balance-sheet', icon: BookOpen },
   ];
 
   const adminNavigation = [

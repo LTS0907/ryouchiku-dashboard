@@ -187,6 +187,37 @@ model AccountingLineItem {
   @@index([year])
 }
 
+// 貸借対照表（月次スナップショット）
+model BalanceSheet {
+  id                 String   @id @default(cuid())
+  year               Int
+  month              Int
+
+  // 資産
+  cash               Float?   // 現金及び預金合計
+  receivables        Float?   // 売上債権合計
+  inventory          Float?   // 棚卸資産合計
+  currentAssets      Float?   // 流動資産合計
+  tangibleAssets     Float?   // 有形固定資産合計
+  fixedAssets        Float?   // 固定資産合計
+  totalAssets        Float?   // 資産の部合計
+
+  // 負債
+  payables           Float?   // 仕入債務合計
+  currentLiabilities Float?   // 流動負債合計
+  fixedLiabilities   Float?   // 固定負債合計
+  totalLiabilities   Float?   // 負債の部合計
+
+  // 純資産
+  netAssets          Float?   // 純資産の部合計
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([year, month])
+  @@index([year, month])
+}
+
 // 予算データ
 model Budget {
   id                String   @id @default(cuid())
