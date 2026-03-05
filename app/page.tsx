@@ -132,7 +132,7 @@ export default function Dashboard() {
   }
 
   // 管理会計データがない場合でも、週次KPIデータがあれば表示
-  if (!data && (!weeklyKPIData || weeklyKPIData.items.length === 0) && (!weeklySiteKPIData || weeklySiteKPIData.items.length === 0)) {
+  if (!data && (!weeklyKPIData?.items?.length) && (!weeklySiteKPIData?.items?.length)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-xl">データがありません</div>
@@ -619,7 +619,7 @@ export default function Dashboard() {
         )}
 
         {/* 週次KPI進捗（積極版） */}
-        {weeklyKPIData && (
+        {weeklyKPIData?.items && (
           <Card className="mb-8">
             <CardHeader>
               <div className="flex items-center justify-between">
