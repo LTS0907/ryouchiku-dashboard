@@ -21,14 +21,25 @@ interface KPIItem {
   };
 }
 
+interface SiteKPIItem extends KPIItem {
+  subName?: string;
+}
+
 interface WeeklyKPIData {
   year: number;
   month: number;
   items: KPIItem[];
 }
 
+interface WeeklySiteKPIData {
+  year: number;
+  month: number;
+  items: SiteKPIItem[];
+}
+
 export default function WeeklyKPIPage() {
   const [data, setData] = useState<WeeklyKPIData | null>(null);
+  const [siteData, setSiteData] = useState<WeeklySiteKPIData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -40,9 +51,13 @@ export default function WeeklyKPIPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/weekly-kpi?year=${selectedYear}&month=${selectedMonth}`);
-      const result = await response.json();
-      setData(result);
+      const [kpiRes, siteRes] = await Promise.all([
+        fetch(`/api/weekly-kpi?year=${selectedYear}&month=${selectedMonth}`),
+        fetch(`/api/weekly-site-kpi?year=${selectedYear}&month=${selectedMonth}`),
+      ]);
+      const [kpiResult, siteResult] = await Promise.all([kpiRes.json(), siteRes.json()]);
+      setData(kpiResult);
+      setSiteData(siteResult);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -282,6 +297,124 @@ export default function WeeklyKPIPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* 週次現場KPI */}
+          {siteData && siteData.items && siteData.items.length > 0 && (() => {
+            // mainItemごとにグループ化
+            const groups: { mainItem: string; items: SiteKPIItem[] }[] = [];
+            siteData.items.forEach((item) => {
+              const last = groups[groups.length - 1];
+              if (last && last.mainItem === item.name) {
+                last.items.push(item);
+              } else {
+                groups.push({ mainItem: item.name, items: [item] });
+              }
+            });
+
+            return (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>{selectedMonth}月 週次現場KPI一覧</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b-2 border-gray-300">
+                          <th className="sticky left-0 bg-white z-10 px-4 py-3 text-left font-semibold text-gray-700 border-r-2 border-gray-300 min-w-[220px]">
+                            項目
+                          </th>
+                          {[1, 2, 3, 4, 5].map((week) => (
+                            <th
+                              key={week}
+                              className="px-4 py-3 text-center font-semibold text-gray-700 border-r border-gray-200 min-w-[120px]"
+                            >
+                              第{week}週
+                            </th>
+                          ))}
+                          <th className="px-4 py-3 text-center font-semibold text-gray-700 border-l-2 border-gray-300 min-w-[120px]">
+                            累計
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groups.map((group) => (
+                          <>
+                            {/* カテゴリヘッダー行 */}
+                            <tr key={`header-${group.mainItem}`} className="bg-gray-100 border-b border-gray-300">
+                              <td
+                                colSpan={7}
+                                className="sticky left-0 bg-gray-100 z-10 px-4 py-2 font-bold text-gray-800 border-r-2 border-gray-300 text-base"
+                              >
+                                {group.mainItem}
+                              </td>
+                            </tr>
+                            {/* サブ項目行 */}
+                            {group.items.map((item, idx) => (
+                              <tr
+                                key={`${group.mainItem}-${idx}`}
+                                className="border-b border-gray-200 hover:bg-gray-50"
+                              >
+                                <td className="sticky left-0 bg-white z-10 px-4 py-3 text-gray-700 border-r-2 border-gray-300 pl-8">
+                                  {item.subName || item.name}
+                                </td>
+                                {[1, 2, 3, 4, 5].map((weekNum) => {
+                                  const weekData = item.weeks.find((w) => w.week === weekNum);
+                                  if (!weekData) {
+                                    return (
+                                      <td key={weekNum} className="px-2 py-3 text-center border-r border-gray-200">
+                                        <div className="text-gray-400">—</div>
+                                      </td>
+                                    );
+                                  }
+                                  return (
+                                    <td key={weekNum} className="px-2 py-3 text-center border-r border-gray-200">
+                                      <div className="space-y-1">
+                                        <div className="font-semibold text-gray-900">
+                                          {formatValue(weekData.actual, item.subName || item.name)}
+                                        </div>
+                                        {weekData.target !== null && (
+                                          <div className="text-xs text-gray-500">
+                                            {formatValue(weekData.target, item.subName || item.name)}
+                                          </div>
+                                        )}
+                                        {weekData.achievementRate !== null && (
+                                          <div className={`text-xs font-semibold ${getAchievementColor(weekData.achievementRate)}`}>
+                                            {(weekData.achievementRate * 100).toFixed(1)}%
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                  );
+                                })}
+                                <td className="px-2 py-3 text-center border-l-2 border-gray-300 bg-blue-50">
+                                  <div className="space-y-1">
+                                    <div className="font-bold text-gray-900">
+                                      {formatValue(item.total.actual, item.subName || item.name)}
+                                    </div>
+                                    {item.total.target !== null && (
+                                      <div className="text-xs text-gray-600">
+                                        {formatValue(item.total.target, item.subName || item.name)}
+                                      </div>
+                                    )}
+                                    {item.total.achievementRate !== null && (
+                                      <div className={`text-xs font-bold ${getAchievementColor(item.total.achievementRate)}`}>
+                                        {(item.total.achievementRate * 100).toFixed(1)}%
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* 凡例 */}
           <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
