@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, FileText, BarChart3, Upload, RefreshCw, Download, TrendingUp } from 'lucide-react';
+import { Home, FileText, BarChart3, Upload, RefreshCw, Download, Target } from 'lucide-react';
 import { useState } from 'react';
 
 export function Navbar() {
@@ -18,6 +18,7 @@ export function Navbar() {
   ];
 
   const adminNavigation = [
+    { name: '目標設定', href: '/admin/target-settings', icon: Target },
     { name: 'CSVアップロード', href: '/admin/upload', icon: Upload },
     { name: '週次KPI入力', href: '/admin/weekly-kpi', icon: FileText },
     { name: '現場KPI入力', href: '/admin/weekly-site-kpi', icon: FileText },

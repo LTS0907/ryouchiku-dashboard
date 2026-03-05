@@ -255,20 +255,6 @@ export default function WeeklyKPIInputPage() {
                       );
                     })}
                   </tr>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="sticky left-0 bg-gray-50 z-10 px-4 py-2 text-xs text-gray-500 border-r-2 border-gray-300"></th>
-                    {[1, 2, 3, 4, 5].map((week) => (
-                      <th
-                        key={week}
-                        className="px-2 py-2 text-center border-r border-gray-200"
-                      >
-                        <div className="flex gap-1">
-                          <div className="flex-1 text-xs text-gray-500">目標</div>
-                          <div className="flex-1 text-xs text-gray-500">実績</div>
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
                 </thead>
                 <tbody>
                   {KPI_ITEMS.map((itemName, idx) => (
@@ -281,28 +267,16 @@ export default function WeeklyKPIInputPage() {
                         const weekData = kpiData[itemName]?.[weekKey];
                         return (
                           <td key={week} className="px-2 py-2 border-r border-gray-200">
-                            <div className="flex gap-1">
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={weekData?.target || ''}
-                                onChange={(e) =>
-                                  handleInputChange(itemName, `week${week}`, 'target', e.target.value)
-                                }
-                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="-"
-                              />
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={weekData?.actual || ''}
-                                onChange={(e) =>
-                                  handleInputChange(itemName, `week${week}`, 'actual', e.target.value)
-                                }
-                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="-"
-                              />
-                            </div>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={weekData?.actual || ''}
+                              onChange={(e) =>
+                                handleInputChange(itemName, `week${week}`, 'actual', e.target.value)
+                              }
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="-"
+                            />
                           </td>
                         );
                       })}
