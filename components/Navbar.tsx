@@ -16,6 +16,7 @@ export function Navbar() {
     { name: '月次会計一覧', href: '/accounting', icon: FileText },
     { name: '年次サマリー', href: '/reports/annual', icon: BarChart3 },
     { name: '貸借対照表', href: '/balance-sheet', icon: BookOpen },
+    { name: '年次KPIレポート', href: '/reports/kpi-annual', icon: BarChart3 },
   ];
 
   const adminNavigation = [
