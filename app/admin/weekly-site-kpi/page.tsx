@@ -256,14 +256,38 @@ export default function WeeklySiteKPIInputPage() {
                     <th className="sticky left-0 bg-white z-10 px-4 py-3 text-left font-semibold text-gray-700 border-r-2 border-gray-300 min-w-[180px]">
                       項目
                     </th>
-                    {[1, 2, 3, 4, 5].map((week) => (
-                      <th
-                        key={week}
-                        className="px-4 py-3 text-center font-semibold text-gray-700 border-r border-gray-200 min-w-[140px]"
-                      >
-                        第{week}週
-                      </th>
-                    ))}
+                    {[1, 2, 3, 4, 5].map((week) => {
+                      const getWeekRange = (year: number, month: number, weekNum: number): string => {
+                        const firstDay = new Date(year, month - 1, 1);
+                        const firstDayOfWeek = firstDay.getDay();
+                        const lastDay = new Date(year, month, 0).getDate();
+                        if (weekNum === 1) {
+                          if (firstDayOfWeek === 6) return `1～${Math.min(7, lastDay)}`;
+                          const daysToFriday = (5 - firstDayOfWeek + 7) % 7 + 1;
+                          return `1～${Math.min(daysToFriday, lastDay)}`;
+                        } else {
+                          let weekStart: number;
+                          if (firstDayOfWeek === 6) {
+                            weekStart = 1 + (weekNum - 1) * 7;
+                          } else {
+                            const daysToFriday = (5 - firstDayOfWeek + 7) % 7 + 1;
+                            weekStart = daysToFriday + 1 + (weekNum - 2) * 7;
+                          }
+                          if (weekStart > lastDay) return '';
+                          return `${weekStart}～${Math.min(weekStart + 6, lastDay)}`;
+                        }
+                      };
+                      const dateRange = getWeekRange(selectedYear, selectedMonth, week);
+                      return (
+                        <th
+                          key={week}
+                          className="px-4 py-3 text-center font-semibold text-gray-700 border-r border-gray-200 min-w-[140px]"
+                        >
+                          <div>第{week}週</div>
+                          {dateRange && <div className="text-xs font-normal text-gray-500">{dateRange}</div>}
+                        </th>
+                      );
+                    })}
                   </tr>
                   <tr className="border-b border-gray-200 bg-gray-50">
                     <th className="sticky left-0 bg-gray-50 z-10 px-4 py-2 text-xs text-gray-500 border-r-2 border-gray-300"></th>
