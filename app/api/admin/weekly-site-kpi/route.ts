@@ -69,3 +69,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'データの保存に失敗しました' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    const { year, month, mainItem, subItem } = body;
+    await prisma.weeklySiteKPI.deleteMany({ where: { year, month, mainItem, subItem } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: '削除に失敗しました' }, { status: 500 });
+  }
+}
