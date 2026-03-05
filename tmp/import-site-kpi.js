@@ -10,13 +10,13 @@ const SUBITEM_RENAME = {
 
 const SITE_KPI_STRUCTURE = [
   { mainItem: '問合数', subItems: ['コンバージョン単価', 'ユーザー数', '指定物件ＳＮＳ投稿数', '指定物件ＳＮＸ投稿'] },
-  { mainItem: '商談件数', subItems: ['追客架電（商談前）', 'メイン商材ない人にアクション'] },
+  { mainItem: '商談件数', subItems: ['追客架電（商談前）', 'メイン商材ない人にアクション'] },  // CSVの全角カッコと一致
   { mainItem: '受注件数', subItems: ['ロープレ回数'] },
   {
     mainItem: '平均限界利益額',
     subItems: ['MEET商談平均粗利額', '景山', '京屋', '中谷', '熊田', '大島', '森谷', '星野', '安栗', 'SR商談平均粗利額', 'SR_京屋', 'SR_熊田', 'SR_星野', 'SR_安栗'],
   },
-  { mainItem: '顧客満足向上', subItems: ['ありがとうカード配布数', '口コミ回収率'] },
+  { mainItem: '顧客満足向上', subItems: ['ありがとうカード配布数', '口コミ回収率'] },  // CSVと一致
   { mainItem: '不動産', subItems: ['交渉物件数'] },
   { mainItem: 'IT', subItems: ['商談件数', '成約率'] },
 ];
@@ -159,7 +159,7 @@ async function main() {
     for (const month of months) {
       const items = monthData[month];
       if (items.length === 0) continue;
-      const result = await postData('/api/admin/weekly-site-kpi', { year, month, items });
+      const result = await postData('/api/admin/weekly-site-kpi', { year, month, items, mode: 'import' });
       console.log(`${month}月 (${items.length}件):`, result.status, result.body.message || result.body.error);
     }
     console.log('週次現場KPIインポート完了');

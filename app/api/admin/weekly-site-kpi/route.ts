@@ -32,7 +32,10 @@ export async function POST(request: Request) {
     for (const item of items) {
       const { mainItem, subItem, weeks } = item;
 
-      const targetFields = mode === 'target' ? {
+      const saveTarget = mode === 'target' || mode === 'import';
+      const saveActual = mode === 'actual' || mode === 'import';
+
+      const targetFields = saveTarget ? {
         week1Target: parseValue(weeks.week1?.target),
         week2Target: parseValue(weeks.week2?.target),
         week3Target: parseValue(weeks.week3?.target),
@@ -40,7 +43,7 @@ export async function POST(request: Request) {
         week5Target: parseValue(weeks.week5?.target),
       } : {};
 
-      const actualFields = mode === 'actual' ? {
+      const actualFields = saveActual ? {
         week1Actual: parseValue(weeks.week1?.actual),
         week2Actual: parseValue(weeks.week2?.actual),
         week3Actual: parseValue(weeks.week3?.actual),

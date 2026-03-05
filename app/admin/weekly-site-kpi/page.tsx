@@ -13,7 +13,7 @@ const SITE_KPI_STRUCTURE = [
   },
   {
     mainItem: '商談件数',
-    subItems: ['追客架電(商談前)', 'メイン商材ない人にアクション'],
+    subItems: ['追客架電（商談前）', 'メイン商材ない人にアクション'],
   },
   {
     mainItem: '受注件数',
@@ -40,7 +40,7 @@ const SITE_KPI_STRUCTURE = [
   },
   {
     mainItem: '顧客満足向上',
-    subItems: ['ありがとうカード配布数', 'ロコミ回収率'],
+    subItems: ['ありがとうカード配布数', '口コミ回収率'],
   },
   {
     mainItem: '不動産',
@@ -55,7 +55,7 @@ const SITE_KPI_STRUCTURE = [
 // ％表記の項目かどうか（subItem名で判定）
 const isPercentItem = (subItem: string) =>
   subItem.includes('率') ||
-  subItem.includes('追客架電') ||
+  subItem.includes('追客架電（商談前）') ||
   subItem.includes('メイン商材ない人にアクション');
 
 interface WeekData {
