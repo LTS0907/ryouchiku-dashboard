@@ -8,7 +8,7 @@ import {
   formatCompactCurrency,
   getAchievementColor,
 } from '@/lib/utils';
-import { TrendingUp, TrendingDown, DollarSign, Target, Users, AlertCircle } from 'lucide-react';
+import { TrendingDown, DollarSign, Target, Users, AlertCircle } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 
 interface WeekData {
@@ -787,163 +787,159 @@ export default function Dashboard() {
         )}
 
         {/* 週次現場KPI進捗（積極版） */}
-        {weeklySiteKPIData && (
-          <Card className="mb-8">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>週次現場KPI進捗（積極版）</CardTitle>
-                <div className="text-sm text-gray-500">
-                  全{weeklySiteKPIData.items.length}項目
+        {weeklySiteKPIData && weeklySiteKPIData.items && weeklySiteKPIData.items.length > 0 && (() => {
+          // mainItemごとにグループ化
+          const siteGroups: { mainItem: string; items: any[] }[] = [];
+          weeklySiteKPIData.items.forEach((item: any) => {
+            const last = siteGroups[siteGroups.length - 1];
+            if (last && last.mainItem === item.name) {
+              last.items.push(item);
+            } else {
+              siteGroups.push({ mainItem: item.name, items: [item] });
+            }
+          });
+
+          const formatSiteValue = (value: number | null, subName?: string, name?: string): string => {
+            if (value === null || value === undefined) return '—';
+            if ((name || '').includes('率') || (subName || '').includes('率') ||
+                (subName || '').includes('追客架電') ||
+                (subName || '').includes('メイン商材ない人にアクション')) {
+              return `${(value * 100).toFixed(1)}%`;
+            }
+            return new Intl.NumberFormat('ja-JP', { maximumFractionDigits: 0 }).format(value);
+          };
+
+          const getSiteColor = (rate: number | null): string => {
+            if (rate === null || rate === undefined) return '';
+            if (rate >= 1.0) return 'text-green-600';
+            if (rate >= 0.8) return 'text-yellow-600';
+            return 'text-red-600';
+          };
+
+          return (
+            <Card className="mb-8">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>週次現場KPI進捗（積極版）</CardTitle>
+                  <div className="text-sm text-gray-500">
+                    全{weeklySiteKPIData.items.length}項目
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b-2 border-gray-300">
-                      <th className="sticky left-0 bg-white z-10 px-4 py-3 text-left font-semibold text-gray-700 border-r-2 border-gray-300 min-w-[180px]">
-                        項目
-                      </th>
-                      {[1, 2, 3, 4, 5].map((week) => {
-                        const getWeekRange = (year: number, month: number, weekNum: number): string => {
-                          const firstDay = new Date(year, month - 1, 1);
-                          const firstDayOfWeek = firstDay.getDay();
-                          const lastDay = new Date(year, month, 0).getDate();
-
-                          if (weekNum === 1) {
-                            if (firstDayOfWeek === 6) {
-                              return `1～${Math.min(7, lastDay)}`;
-                            } else {
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b-2 border-gray-300">
+                        <th className="sticky left-0 bg-white z-10 px-4 py-3 text-left font-semibold text-gray-700 border-r-2 border-gray-300 min-w-[220px]">
+                          項目
+                        </th>
+                        {[1, 2, 3, 4, 5].map((week) => {
+                          const getWeekRange = (year: number, month: number, weekNum: number): string => {
+                            const firstDay = new Date(year, month - 1, 1);
+                            const firstDayOfWeek = firstDay.getDay();
+                            const lastDay = new Date(year, month, 0).getDate();
+                            if (weekNum === 1) {
+                              if (firstDayOfWeek === 6) return `1～${Math.min(7, lastDay)}`;
                               const daysToFriday = (5 - firstDayOfWeek + 7) % 7 + 1;
-                              const firstWeekEnd = daysToFriday;
-                              return `1～${Math.min(firstWeekEnd, lastDay)}`;
-                            }
-                          } else {
-                            let weekStart: number;
-                            if (firstDayOfWeek === 6) {
-                              weekStart = 1 + (weekNum - 1) * 7;
+                              return `1～${Math.min(daysToFriday, lastDay)}`;
                             } else {
-                              const daysToFriday = (5 - firstDayOfWeek + 7) % 7 + 1;
-                              weekStart = daysToFriday + 1 + (weekNum - 2) * 7;
+                              let weekStart: number;
+                              if (firstDayOfWeek === 6) {
+                                weekStart = 1 + (weekNum - 1) * 7;
+                              } else {
+                                const daysToFriday = (5 - firstDayOfWeek + 7) % 7 + 1;
+                                weekStart = daysToFriday + 1 + (weekNum - 2) * 7;
+                              }
+                              if (weekStart > lastDay) return '';
+                              return `${weekStart}～${Math.min(weekStart + 6, lastDay)}`;
                             }
-
-                            const weekEnd = weekStart + 6;
-
-                            if (weekStart > lastDay) {
-                              return '';
-                            }
-
-                            const endDay = Math.min(weekEnd, lastDay);
-                            return `${weekStart}～${endDay}`;
-                          }
-                        };
-
-                        const dateRange = getWeekRange(selectedYear, selectedMonth, week);
-
-                        return (
-                          <th
-                            key={week}
-                            className="px-4 py-3 text-center font-semibold text-gray-700 border-r border-gray-200 min-w-[120px]"
-                          >
-                            <div>第{week}週</div>
-                            {dateRange && <div className="text-xs font-normal text-gray-500">{dateRange}</div>}
-                          </th>
-                        );
-                      })}
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700 border-l-2 border-gray-300 min-w-[120px]">
-                        累計
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {weeklySiteKPIData.items.map((item: any, idx: number) => {
-                      const formatValue = (value: number | null): string => {
-                        if (value === null || value === undefined) return '—';
-                        // パーセンテージ項目
-                        if (item.name.includes('率') || item.subName?.includes('率') ||
-                            item.subName?.includes('追客架電') ||
-                            item.subName?.includes('メイン商材ない人にアクション')) {
-                          return `${(value * 100).toFixed(1)}%`;
-                        }
-                        return new Intl.NumberFormat('ja-JP', {
-                          maximumFractionDigits: 0,
-                        }).format(value);
-                      };
-
-                      const getColor = (rate: number | null): string => {
-                        if (rate === null || rate === undefined) return '';
-                        if (rate >= 1.0) return 'text-green-600';
-                        if (rate >= 0.8) return 'text-yellow-600';
-                        return 'text-red-600';
-                      };
-
-                      const displayName = item.subName ? `　${item.subName}` : item.name;
-
-                      return (
-                        <tr
-                          key={idx}
-                          className="border-b border-gray-200 hover:bg-gray-50"
-                        >
-                          <td className="sticky left-0 bg-white z-10 px-4 py-3 font-semibold text-gray-900 border-r-2 border-gray-300">
-                            {displayName}
-                          </td>
-                          {[1, 2, 3, 4, 5].map((weekNum) => {
-                            const weekData = item.weeks.find((w: any) => w.week === weekNum);
-                            if (!weekData) {
-                              return (
-                                <td key={weekNum} className="px-2 py-3 text-center border-r border-gray-200">
-                                  <div className="text-gray-400">—</div>
-                                </td>
-                              );
-                            }
-
-                            return (
-                              <td key={weekNum} className="px-2 py-3 text-center border-r border-gray-200">
+                          };
+                          const dateRange = getWeekRange(selectedYear, selectedMonth, week);
+                          return (
+                            <th key={week} className="px-4 py-3 text-center font-semibold text-gray-700 border-r border-gray-200 min-w-[120px]">
+                              <div>第{week}週</div>
+                              {dateRange && <div className="text-xs font-normal text-gray-500">{dateRange}</div>}
+                            </th>
+                          );
+                        })}
+                        <th className="px-4 py-3 text-center font-semibold text-gray-700 border-l-2 border-gray-300 min-w-[120px]">
+                          累計
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {siteGroups.map((group) => (
+                        <>
+                          {/* カテゴリヘッダー行 */}
+                          <tr key={`header-${group.mainItem}`} className="bg-gray-100 border-b border-gray-300">
+                            <td colSpan={7} className="sticky left-0 bg-gray-100 z-10 px-4 py-2 font-bold text-gray-800 border-r-2 border-gray-300 text-base">
+                              {group.mainItem}
+                            </td>
+                          </tr>
+                          {/* サブ項目行 */}
+                          {group.items.map((item: any, idx: number) => (
+                            <tr key={`${group.mainItem}-${idx}`} className="border-b border-gray-200 hover:bg-gray-50">
+                              <td className="sticky left-0 bg-white z-10 px-4 py-3 text-gray-700 border-r-2 border-gray-300 pl-8">
+                                {item.subName || item.name}
+                              </td>
+                              {[1, 2, 3, 4, 5].map((weekNum) => {
+                                const weekData = item.weeks.find((w: any) => w.week === weekNum);
+                                if (!weekData) {
+                                  return (
+                                    <td key={weekNum} className="px-2 py-3 text-center border-r border-gray-200">
+                                      <div className="text-gray-400">—</div>
+                                    </td>
+                                  );
+                                }
+                                return (
+                                  <td key={weekNum} className="px-2 py-3 text-center border-r border-gray-200">
+                                    <div className="space-y-1">
+                                      <div className="font-semibold text-gray-900">
+                                        {formatSiteValue(weekData.actual, item.subName, item.name)}
+                                      </div>
+                                      {weekData.target !== null && (
+                                        <div className="text-xs text-gray-500">
+                                          {formatSiteValue(weekData.target, item.subName, item.name)}
+                                        </div>
+                                      )}
+                                      {weekData.achievementRate !== null && (
+                                        <div className={`text-xs font-semibold ${getSiteColor(weekData.achievementRate)}`}>
+                                          {(weekData.achievementRate * 100).toFixed(1)}%
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                              <td className="px-2 py-3 text-center border-l-2 border-gray-300 bg-blue-50">
                                 <div className="space-y-1">
-                                  <div className="font-semibold text-gray-900">
-                                    {formatValue(weekData.actual)}
+                                  <div className="font-bold text-gray-900">
+                                    {formatSiteValue(item.total.actual, item.subName, item.name)}
                                   </div>
-                                  {weekData.target !== null && (
-                                    <div className="text-xs text-gray-500">
-                                      {formatValue(weekData.target)}
+                                  {item.total.target !== null && (
+                                    <div className="text-xs text-gray-600">
+                                      {formatSiteValue(item.total.target, item.subName, item.name)}
                                     </div>
                                   )}
-                                  {weekData.achievementRate !== null && (
-                                    <div className={`text-xs font-semibold ${getColor(weekData.achievementRate)}`}>
-                                      {(weekData.achievementRate * 100).toFixed(1)}%
+                                  {item.total.achievementRate !== null && (
+                                    <div className={`text-xs font-bold ${getSiteColor(item.total.achievementRate)}`}>
+                                      {(item.total.achievementRate * 100).toFixed(1)}%
                                     </div>
                                   )}
                                 </div>
                               </td>
-                            );
-                          })}
-                          <td className="px-2 py-3 text-center border-l-2 border-gray-300 bg-blue-50">
-                            <div className="space-y-1">
-                              <div className="font-bold text-gray-900">
-                                {formatValue(item.total.actual)}
-                              </div>
-                              {item.total.target !== null && (
-                                <div className="text-xs text-gray-600">
-                                  {formatValue(item.total.target)}
-                                </div>
-                              )}
-                              {item.total.achievementRate !== null && (
-                                <div className={`text-xs font-bold ${getColor(item.total.achievementRate)}`}>
-                                  {(item.total.achievementRate * 100).toFixed(1)}%
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                            </tr>
+                          ))}
+                        </>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
       </main>
     </div>
   );

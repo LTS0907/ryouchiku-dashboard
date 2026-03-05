@@ -14,7 +14,6 @@ export function Navbar() {
   const navigation = [
     { name: 'ダッシュボード', href: '/', icon: Home },
     { name: '月次会計一覧', href: '/accounting', icon: FileText },
-    { name: '週次KPI', href: '/weekly-kpi', icon: TrendingUp },
     { name: '年次サマリー', href: '/reports/annual', icon: BarChart3 },
   ];
 
