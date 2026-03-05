@@ -141,50 +141,51 @@ export default function BudgetWizardPage() {
 
       const historicalMonthly: any[] = data.historicalMonthly || [];
 
-      // 年ごとの年間合計
-      const yearTotals: Record<number, { sales: number; gp: number; mp: number; op: number }> = {};
-      for (const row of historicalMonthly) {
-        if (!yearTotals[row.year]) yearTotals[row.year] = { sales: 0, gp: 0, mp: 0, op: 0 };
-        yearTotals[row.year].sales += row.salesRevenue || 0;
-        yearTotals[row.year].gp += row.grossProfit || 0;
-        yearTotals[row.year].mp += row.marginProfit || 0;
-        yearTotals[row.year].op += row.operatingProfit || 0;
-      }
-      const years = Object.keys(yearTotals).map(Number);
+      // 月ごとに過去データの平均値を集計
+      const monthSum: Record<number, { sales: number; count: number }> = {};
+      for (let m = 1; m <= 12; m++) monthSum[m] = { sales: 0, count: 0 };
 
-      // 月別比率の平均
-      const monthRatios: Record<number, { sales: number; gp: number; mp: number; op: number }> = {};
-      for (let m = 1; m <= 12; m++) {
-        const rs: number[][] = [[], [], [], []];
-        for (const yr of years) {
-          const row = historicalMonthly.find((r: any) => r.year === yr && r.month === m);
-          const tot = yearTotals[yr];
-          if (row && tot.sales > 0) {
-            rs[0].push((row.salesRevenue || 0) / tot.sales);
-            rs[1].push((row.grossProfit || 0) / (tot.gp || 1));
-            rs[2].push((row.marginProfit || 0) / (tot.mp || 1));
-            rs[3].push((row.operatingProfit || 0) / (tot.op || 1));
-          }
+      for (const row of historicalMonthly) {
+        const m = row.month;
+        if (row.salesRevenue && row.salesRevenue > 0) {
+          monthSum[m].sales += row.salesRevenue;
+          monthSum[m].count++;
         }
-        const avg = (arr: number[]) =>
-          arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 1 / 12;
-        monthRatios[m] = { sales: avg(rs[0]), gp: avg(rs[1]), mp: avg(rs[2]), op: avg(rs[3]) };
       }
+
+      // データがある月の平均売上を計算。ない月はデータがある月の平均で補完
+      const monthAvgSales: number[] = Array(12).fill(0);
+      const availableAvg = (() => {
+        const counts = Object.values(monthSum).filter((v) => v.count > 0);
+        if (counts.length === 0) return 0;
+        return counts.reduce((s, v) => s + v.sales / v.count, 0) / counts.length;
+      })();
+
+      for (let m = 1; m <= 12; m++) {
+        monthAvgSales[m - 1] =
+          monthSum[m].count > 0
+            ? monthSum[m].sales / monthSum[m].count
+            : availableAvg || 1; // 全データなければ均等割のため1をセット
+      }
+
+      // 合計で割って比率を正規化（必ず12ヶ月で合計=1になる）
+      const totalAvgSales = monthAvgSales.reduce((s, v) => s + v, 0);
+      const salesRatios = monthAvgSales.map((v) =>
+        totalAvgSales > 0 ? v / totalAvgSales : 1 / 12
+      );
 
       const gp = parseInput(annualTargets.grossProfit);
       const mp = parseInput(annualTargets.marginProfit);
       const op = parseInput(annualTargets.operatingProfit);
 
-      const computed: MonthlyBudget[] = MONTHS.map((m) => {
-        const r = monthRatios[m];
-        return {
-          month: m,
-          sales: Math.round(sales * r.sales),
-          grossProfit: Math.round((gp || 0) * r.gp),
-          marginProfit: Math.round((mp || 0) * r.mp),
-          operatingProfit: Math.round((op || 0) * r.op),
-        };
-      });
+      // 月次予算 = 年間目標 × 月比率（12ヶ月合計が年間目標と一致）
+      const computed: MonthlyBudget[] = MONTHS.map((m, i) => ({
+        month: m,
+        sales: Math.round(sales * salesRatios[i]),
+        grossProfit: Math.round((gp || 0) * salesRatios[i]),
+        marginProfit: Math.round((mp || 0) * salesRatios[i]),
+        operatingProfit: Math.round((op || 0) * salesRatios[i]),
+      }));
 
       setMonthlyBudgets(computed);
 
