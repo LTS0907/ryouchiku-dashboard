@@ -105,7 +105,8 @@ function recalcDerived(items: LineItemRow[]): LineItemRow[] {
 export default function BudgetWizardPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [selectedYear, setSelectedYear] = useState(2026);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear + 1);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -400,9 +401,9 @@ export default function BudgetWizardPage() {
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                   className="px-3 py-2 border border-gray-300 rounded-lg"
                 >
-                  <option value={2024}>2024年</option>
-                  <option value={2025}>2025年</option>
-                  <option value={2026}>2026年</option>
+                  {Array.from({ length: 8 }, (_, i) => currentYear - 2 + i).map((yr) => (
+                    <option key={yr} value={yr}>{yr}年</option>
+                  ))}
                 </select>
               </div>
               <div className="max-w-md space-y-4">
