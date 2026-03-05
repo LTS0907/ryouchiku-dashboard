@@ -35,17 +35,29 @@ export async function GET(request: Request) {
       orderBy: [{ year: 'asc' }, { rowIndex: 'asc' }],
     });
 
-    // 今年のrowIndex→category/subcategory マッピング（表示用）
-    const currentLineItems = await prisma.accountingLineItem.findMany({
+    // 対象年度の明細行を取得。なければ最新の登録済み年度にフォールバック
+    let currentLineItems = await prisma.accountingLineItem.findMany({
       where: { year: targetYear },
-      select: {
-        rowIndex: true,
-        category: true,
-        subcategory: true,
-        monthsJson: true,
-      },
+      select: { rowIndex: true, category: true, subcategory: true, monthsJson: true },
       orderBy: { rowIndex: 'asc' },
     });
+
+    let lineItemsYear = targetYear;
+    if (currentLineItems.length === 0) {
+      // 直近の登録済み年度を探す
+      const latestYear = await prisma.accountingLineItem.findFirst({
+        orderBy: { year: 'desc' },
+        select: { year: true },
+      });
+      if (latestYear) {
+        lineItemsYear = latestYear.year;
+        currentLineItems = await prisma.accountingLineItem.findMany({
+          where: { year: lineItemsYear },
+          select: { rowIndex: true, category: true, subcategory: true, monthsJson: true },
+          orderBy: { rowIndex: 'asc' },
+        });
+      }
+    }
 
     return NextResponse.json({
       historicalMonthly,
@@ -57,6 +69,7 @@ export async function GET(request: Request) {
         ...item,
         months: JSON.parse(item.monthsJson || '[]'),
       })),
+      lineItemsYear,
     });
   } catch (error) {
     console.error('Budget Wizard GET Error:', error);
