@@ -124,6 +124,7 @@ export default function BudgetWizardPage() {
 
   // Step 3
   const [lineItems, setLineItems] = useState<LineItemRow[]>([]);
+  const [apiData, setApiData] = useState<any>(null);
 
   // ─── Step 1 → Step 2 ───
   const handleCalculate = async () => {
@@ -179,6 +180,7 @@ export default function BudgetWizardPage() {
       }));
 
       setMonthlyBudgets(computed);
+      setApiData(data);
 
       // Step 3 のデータも計算
       prepareLineItems(data, computed);
@@ -257,24 +259,11 @@ export default function BudgetWizardPage() {
     });
   };
 
-  // Step 2 → Step 3: 月次予算の変更を反映してからStep3へ
+  // Step 2 → Step 3: 最新の月次予算で費用項目を再組み立て
   const handleGoToStep3 = () => {
-    // 月次予算の売上・利益を構造行に反映
-    setLineItems((prev) => {
-      const updated = prev.map((li) => {
-        if (!SALES_LABELS.includes(li.category) && !DERIVED_LABELS.includes(li.category)) return li;
-        const newBudgets = MONTHS.map((m, mi) => {
-          const mb = monthlyBudgets[mi];
-          if (li.category === '売上高合計') return mb.sales;
-          if (li.category === '売上総利益') return mb.grossProfit;
-          if (li.category === '限界利益') return mb.marginProfit;
-          if (li.category === '営業利益') return mb.operatingProfit;
-          return li.monthBudgets[mi];
-        });
-        return { ...li, monthBudgets: newBudgets };
-      });
-      return recalcDerived(updated);
-    });
+    if (apiData) {
+      prepareLineItems(apiData, monthlyBudgets);
+    }
     setStep(3);
   };
 
@@ -514,10 +503,16 @@ export default function BudgetWizardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="mb-3 flex gap-4 text-xs">
+              <div className="mb-3 flex gap-4 text-xs items-center">
                 <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 bg-blue-100 border border-blue-300 rounded"></span>集計・利益行（自動計算）</span>
                 <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 bg-white border border-gray-300 rounded"></span>費用明細（編集可）</span>
+                <span className="ml-auto text-gray-400">{lineItems.length}行読み込み済み（参照年度: {apiData?.lineItemsYear ?? '—'}年）</span>
               </div>
+              {lineItems.length === 0 && (
+                <div className="p-6 text-center text-gray-500 bg-yellow-50 rounded-lg mb-4">
+                  費用項目が見つかりません。先に「CSVアップロード」から月次予測CSVを登録してください。
+                </div>
+              )}
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-xs">
                   <thead>
