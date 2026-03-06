@@ -10,6 +10,7 @@ import {
 } from '@/lib/utils';
 import { TrendingDown, DollarSign, Target, Users, AlertCircle } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
+import { AIKpiAnalysis } from '@/components/AIKpiAnalysis';
 
 interface WeekData {
   week: number;
@@ -977,6 +978,7 @@ export default function Dashboard() {
             </Card>
           );
         })()}
+        <AIKpiAnalysis year={selectedYear} month={selectedMonth} />
       </main>
     </div>
   );
